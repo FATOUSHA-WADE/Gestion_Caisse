@@ -1,8 +1,8 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "CaisseManager API",
-        "description": "Documentation de l'API CaisseManager pour la gestion de caisse",
+        "title": "GestiCom API",
+        "description": "Documentation de l'API GestiCom pour la gestion de caisse",
         "version": "1.0.0"
     },
     "servers": [

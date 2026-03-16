@@ -2,10 +2,43 @@ import prisma from '../config/database.js';
 
 class CategorieService {
 
-  async getAll() {
-    return await prisma.categorie.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+  async getAll(query) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const filters = {};
+
+    if (query.statut) {
+      filters.statut = query.statut;
+    }
+
+    if (query.nom) {
+      filters.nom = {
+        contains: query.nom,
+        mode: 'insensitive'
+      };
+    }
+
+    const [categories, total] = await Promise.all([
+      prisma.categorie.findMany({
+        where: filters,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.categorie.count({ where: filters })
+    ]);
+
+    return {
+      categories,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   async getById(id) {

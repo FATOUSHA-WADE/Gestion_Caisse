@@ -7,11 +7,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://neondb_owner:npg_GJj3AzNb4gfk@ep-withered-term-afpvubpf-pooler.c-2.us-west-2.aws.neon.tech:5432/caissedb?sslmode=require
+      - DATABASE_URL=postgresql://poscaisse:caisse1234@localhost:5432/caissedb
       - JWT_SECRET=monSuperSecret
       - JWT_EXPIRES_IN=8h
       - PORT=3000
     volumes:
       - ./images:/app/images
-
-    

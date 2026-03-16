@@ -4,11 +4,12 @@ class CategorieController {
 
   async getAll(req, res, next) {
     try {
-      const categories = await categorieService.getAll();
+      const result = await categorieService.getAll(req.query);
 
       res.json({
         success: true,
-        data: categories
+        data: result.categories,
+        meta: result.meta
       });
 
     } catch (error) {

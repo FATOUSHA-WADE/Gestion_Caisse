@@ -67,12 +67,160 @@ class DashboardService {
       })
     );
 
+    // 📊 Ventes de la semaine par jour
+    // Calculer le lundi de la semaine courante
+    const currentDay = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((currentDay + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+
+    // Calculer le dimanche de la semaine courante
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const ventesSemaine = await prisma.$queryRaw`
+      SELECT DATE("createdAt" AT TIME ZONE 'Africa/Dakar') as date,
+             SUM(total) as total,
+             COUNT(*) as "nbVentes"
+      FROM "Vente"
+      WHERE "createdAt" >= ${monday} AND "createdAt" <= ${sunday} AND statut = 'validee'
+      GROUP BY DATE("createdAt" AT TIME ZONE 'Africa/Dakar')
+      ORDER BY date ASC
+    `;
+
+    // Formater les dates pour le frontend
+    const formattedVentesSemaine = ventesSemaine.map(v => ({
+      date: v.date instanceof Date ? v.date.toISOString().slice(0, 10) : String(v.date).slice(0, 10),
+      total: Number(v.total || 0),
+      nbVentes: Number(v.nbVentes || 0)
+    }));
+
+    // 📊 Ventes par catégorie (uniquement les ventes validées)
+    const ventesParCategorie = await prisma.$queryRaw`
+      SELECT c.nom as categorie, SUM(lv."sousTotal") as total, SUM(lv.quantite) as quantite
+      FROM "LigneVente" lv
+      JOIN "Vente" v ON lv."venteId" = v.id
+      JOIN "Produit" p ON lv."produitId" = p.id
+      JOIN "Categorie" c ON p."categorieId" = c.id
+      WHERE v.statut = 'validee'
+      GROUP BY c.id, c.nom
+      ORDER BY total DESC
+      LIMIT 6
+    `;
+
+    const categoriesDetails = ventesParCategorie.map(item => ({
+      categorie: item.categorie || 'Non catégorisé',
+      total: Number(item.total || 0),
+      quantite: Number(item.quantite || 0)
+    }));
+
+    // 📝 Ventes récentes
+    const ventesRecentes = await prisma.vente.findMany({
+      take: 10,
+      where: { statut: "validee" },
+      include: {
+        user: {
+          select: { id: true, nom: true }
+        },
+        lignes: {
+          include: {
+            produit: {
+              select: { id: true, nom: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // 📦 Produits récents (derniers produits ajoutés)
+    const produitsRecents = await prisma.produit.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        categorie: {
+          select: { id: true, nom: true }
+        }
+      }
+    });
+
+    // 📈 Total des produits
+    const totalProduits = await prisma.produit.count({
+      where: { statut: 'actif' }
+    });
+
+    // 📁 Total des catégories
+    const totalCategories = await prisma.categorie.count({
+      where: { statut: 'actif' }
+    });
+
+    // 👥 Total des utilisateurs
+    const totalUsers = await prisma.user.count({
+      where: { statut: 'actif' }
+    });
+
+    // 💰 CA total (toutes les ventes validées)
+    const caTotal = await prisma.vente.aggregate({
+      _sum: { total: true },
+      where: { statut: 'validee' }
+    });
+
+    // 📊 Mouvements de stock récents
+    const mouvementsRecents = await prisma.mouvementStock.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        produit: {
+          select: { id: true, nom: true }
+        },
+        user: {
+          select: { id: true, nom: true }
+        }
+      }
+    });
+
     return {
       caJour: caJour._sum.total || 0,
       caMois: caMois._sum.total || 0,
+      caTotal: caTotal._sum.total || 0,
       nbVentes,
+      totalProduits,
+      totalCategories,
+      totalUsers,
       stockFaible,
-      topProduits: produitsDetails
+      topProduits: produitsDetails,
+      ventesSemaine: formattedVentesSemaine,
+      ventesParCategorie: categoriesDetails,
+      ventesRecentes: ventesRecentes.map(v => ({
+        id: v.id,
+        reference: v.reference,
+        total: Number(v.total),
+        modePaiement: v.modePaiement,
+        createdAt: v.createdAt,
+        user: v.user,
+        lignes: v.lignes
+      })),
+      produitsRecents: produitsRecents.map(p => ({
+        id: p.id,
+        nom: p.nom,
+        sku: p.sku,
+        prixVente: Number(p.prixVente),
+        stock: p.stock,
+        categorie: p.categorie,
+        createdAt: p.createdAt
+      })),
+      mouvementsRecents: mouvementsRecents.map(m => ({
+        id: m.id,
+        type: m.type,
+        quantite: m.quantite,
+        quantiteAvant: m.quantiteAvant,
+        quantiteApres: m.quantiteApres,
+        motif: m.motif,
+        createdAt: m.createdAt,
+        produit: m.produit,
+        user: m.user
+      }))
     };
   }
 

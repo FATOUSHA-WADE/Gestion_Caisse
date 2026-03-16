@@ -84,6 +84,71 @@ class VenteService {
     });
     return result;
   }
+
+  async getAllVentes(query) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const filters = {};
+
+    if (query.statut) {
+      filters.statut = query.statut;
+    }
+
+    const [ventes, total] = await Promise.all([
+      prisma.vente.findMany({
+        where: filters,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: { id: true, nom: true, telephone: true }
+          },
+          lignes: {
+            include: {
+              produit: {
+                select: { id: true, nom: true }
+              }
+            }
+          },
+          recu: true
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.vente.count({ where: filters })
+    ]);
+
+    return {
+      ventes,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  async getVenteById(venteId) {
+    const vente = await prisma.vente.findUnique({
+      where: { id: Number(venteId) },
+      include: {
+        user: {
+          select: { id: true, nom: true, telephone: true }
+        },
+        lignes: {
+          include: {
+            produit: {
+              select: { id: true, nom: true, image: true }
+            }
+          }
+        },
+        recu: true
+      }
+    });
+    return vente;
+  }
  
 
   async annulerVente(venteId, userId) {

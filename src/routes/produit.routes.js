@@ -2,8 +2,10 @@ import multer from 'multer';
 
 import express from 'express';
 import produitController from '../controllers/produit.controller.js';
+import { validateProduit } from '../validators/produit.validator.js';
 import authMiddleware from '../middlewares/auth.middleware.js';
 import roleMiddleware from '../middlewares/role.middleware.js';
+import prisma from '../config/database.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -40,6 +42,7 @@ router.post('/',
   authMiddleware,
   roleMiddleware(['admin', 'gerant']),
   upload.single('image'),
+  validateProduit,
   produitController.create
 );
 
@@ -47,7 +50,47 @@ router.put('/:id',
   authMiddleware,
   roleMiddleware(['admin', 'gerant']),
   upload.single('image'),
+  validateProduit,
   produitController.update
+);
+
+// Route spécifique pour mise à jour du stock uniquement
+router.patch('/:id/stock',
+  authMiddleware,
+  roleMiddleware(['admin', 'gerant']),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { stock } = req.body;
+      
+      if (stock === undefined || stock === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Le stock est requis'
+        });
+      }
+      
+      const stockNum = Number(stock);
+      if (isNaN(stockNum)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Le stock doit être un nombre'
+        });
+      }
+      
+      const produit = await prisma.produit.update({
+        where: { id: Number(id) },
+        data: { stock: stockNum }
+      });
+      
+      res.json({
+        success: true,
+        data: produit
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 router.delete('/:id',

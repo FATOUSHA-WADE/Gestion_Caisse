@@ -5,8 +5,7 @@ import { generateToken } from '../config/jwt.js';
 
 class AuthService {
 
-  async login(telephone, pin) {
-
+  async login(telephone, password) {
     const user = await prisma.user.findUnique({
       where: { telephone }
     });
@@ -17,10 +16,10 @@ class AuthService {
       throw error;
     }
 
-    const pinValide = await bcrypt.compare(pin, user.codePin);
+    const passwordValide = await bcrypt.compare(password, user.password);
 
-    if (!pinValide) {
-      const error = new Error("PIN incorrect");
+    if (!passwordValide) {
+      const error = new Error("Mot de passe incorrect");
       error.statusCode = 401;
       throw error;
     }

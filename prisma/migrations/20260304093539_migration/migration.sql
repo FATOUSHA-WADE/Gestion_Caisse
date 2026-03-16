@@ -11,7 +11,7 @@ CREATE TYPE "StatutProduit" AS ENUM ('actif', 'inactif', 'epuise');
 CREATE TYPE "StatutCategorie" AS ENUM ('actif', 'inactif');
 
 -- CreateEnum
-CREATE TYPE "ModePaiement" AS ENUM ('especes', 'carte', 'mobileMoney');
+CREATE TYPE "ModePaiement" AS ENUM ('ESPECES', 'CARTE', 'ORANGE_MONEY', 'WAVE');
 
 -- CreateEnum
 CREATE TYPE "StatutVente" AS ENUM ('validee', 'annulee');
@@ -28,7 +28,7 @@ CREATE TABLE "User" (
     "nom" TEXT NOT NULL,
     "telephone" TEXT NOT NULL,
     "email" TEXT,
-    "codePin" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'caissier',
     "statut" "StatutUser" NOT NULL DEFAULT 'actif',
     "derniereConnexion" TIMESTAMP(3),

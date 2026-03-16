@@ -33,20 +33,18 @@ class ProduitController {
 
   async create(req, res, next) {
     try {
-      let data = req.body;
-      if (req.file) {
-        // Enregistre le chemin relatif Images/nomOriginal.ext
-        data.image = 'Images/' + req.file.originalname;
-      }
-      // Correction : conversion des champs numériques
-      if (data.categorieId) data.categorieId = Number(data.categorieId);
-      if (data.prixVente) data.prixVente = Number(data.prixVente);
-      if (data.stock) data.stock = Number(data.stock);
-      if (data.stockMin) data.stockMin = Number(data.stockMin);
+      const data = {
+        ...req.body,
+        ...(req.file && { image: 'Images/' + req.file.originalname }),
+        categorieId: req.body.categorieId ? Number(req.body.categorieId) : undefined,
+        prixVente: req.body.prixVente ? Number(req.body.prixVente) : undefined,
+        stock: req.body.stock ? Number(req.body.stock) : undefined,
+        stockMin: req.body.stockMin ? Number(req.body.stockMin) : undefined
+      };
       const produit = await produitService.create(data);
       res.status(201).json({
         success: true,
-        message: "Produit créé",
+        message: 'Produit créé',
         data: produit
       });
     } catch (error) {
@@ -56,22 +54,18 @@ class ProduitController {
 
   async update(req, res, next) {
     try {
-      let data = req.body;
-      if (req.file) {
-        data.image = 'Images/' + req.file.originalname;
-      }
-      // Correction : conversion des champs numériques
-      if (data.categorieId) data.categorieId = Number(data.categorieId);
-      if (data.prixVente) data.prixVente = Number(data.prixVente);
-      if (data.stock) data.stock = Number(data.stock);
-      if (data.stockMin) data.stockMin = Number(data.stockMin);
-      const produit = await produitService.update(
-        req.params.id,
-        data
-      );
+      const data = {
+        ...req.body,
+        ...(req.file && { image: 'Images/' + req.file.originalname }),
+        categorieId: req.body.categorieId ? Number(req.body.categorieId) : undefined,
+        prixVente: req.body.prixVente ? Number(req.body.prixVente) : undefined,
+        stock: req.body.stock ? Number(req.body.stock) : undefined,
+        stockMin: req.body.stockMin ? Number(req.body.stockMin) : undefined
+      };
+      const produit = await produitService.update(req.params.id, data);
       res.json({
         success: true,
-        message: "Produit mis à jour",
+        message: 'Produit mis à jour',
         data: produit
       });
     } catch (error) {

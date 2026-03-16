@@ -18,7 +18,7 @@ class RecuService {
       throw new Error("Vente introuvable");
     }
 
-    const urlPdf = generatePDF(vente, vente.lignes);
+    const urlPdf = await generatePDF(vente, vente.lignes);
 
     const recu = await prisma.recu.create({
       data: {

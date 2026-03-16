@@ -4,17 +4,23 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+
+  // Supprimer d'abord les enregistrements dépendants
+  await prisma.mouvementStock.deleteMany();
+  await prisma.vente.deleteMany();
+  await prisma.passwordReset.deleteMany();
+  await prisma.notification.deleteMany();
   await prisma.user.deleteMany();
 
-  const hashedPin = await bcrypt.hash('1234', 10);
+  const hashedPassword = await bcrypt.hash('admin1234', 10);
 
   await prisma.user.create({
     data: {
       nom: 'UserAdmin',
       telephone: '771428150',
       email: 'admin@gmail.com',
-      codePin: hashedPin,
-      role: 'admin', 
+      password: hashedPassword,
+      role: 'admin',
       statut: 'actif',
     },
   });

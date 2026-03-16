@@ -23,23 +23,58 @@ class VenteController {
       next(error);
     }
   }
-  async annuler(req, res, next) {
-  try {
 
-    const result = await venteService.annulerVente(
-      req.params.id,
-      req.user.id
-    );
+  async getAll(req, res, next) {
+    try {
+      const result = await venteService.getAllVentes(req.query);
 
-    res.json({
-      success: true,
-      message: result.message
-    });
-
-  } catch (error) {
-    next(error);
+      res.json({
+        success: true,
+        data: result.ventes,
+        meta: result.meta
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-}
+
+  async getById(req, res, next) {
+    try {
+      const vente = await venteService.getVenteById(req.params.id);
+
+      if (!vente) {
+        return res.status(404).json({
+          success: false,
+          message: "Vente introuvable"
+        });
+      }
+
+      res.json({
+        success: true,
+        data: vente
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async annuler(req, res, next) {
+    try {
+
+      const result = await venteService.annulerVente(
+        req.params.id,
+        req.user.id
+      );
+
+      res.json({
+        success: true,
+        message: result.message
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new VenteController();
