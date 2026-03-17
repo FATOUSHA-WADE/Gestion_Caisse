@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon --watch src --ext js server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "prisma generate && prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
