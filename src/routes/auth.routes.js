@@ -4,6 +4,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import path from 'path';
+import bcrypt from 'bcrypt';
 import authController from '../controllers/auth.controller.js';
 import { validateLogin } from '../validators/auth.validator.js';
 import authMiddleware from '../middlewares/auth.middleware.js';
@@ -33,6 +34,51 @@ const loginLimiter = rateLimit({
 });
 
 router.post('/login', loginLimiter, validateLogin, authController.login);
+
+// Route pour créer le premier utilisateur admin (utiliser une seule fois)
+router.post('/setup', async (req, res) => {
+  try {
+    // Vérifier si des utilisateurs existent déjà
+    const userCount = await prisma.user.count();
+    
+    if (userCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Un utilisateur existe déjà. Cette route est désactivée."
+      });
+    }
+    
+    // Créer l'admin par défaut
+    const hashedPassword = await bcrypt.hash('admin1234', 10);
+    
+    const admin = await prisma.user.create({
+      data: {
+        nom: 'Admin',
+        telephone: '771428150',
+        email: 'admin@gesticom.com',
+        password: hashedPassword,
+        role: 'admin',
+        statut: 'actif'
+      }
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: "Administrateur créé avec succès",
+      credentials: {
+        telephone: '771428150',
+        password: 'admin1234'
+      }
+    });
+  } catch (error) {
+    console.error('[SETUP ERROR]', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la création de l'administrateur",
+      error: error.message
+    });
+  }
+});
 
 // Routes pour mot de passe oublié
 router.post('/forgot-password', authController.forgotPassword);

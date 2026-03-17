@@ -5,6 +5,7 @@ import path from 'path';
 import errorHandler from './middlewares/errorHandler.js';
 import exportsStatic from './routes/exports.static.js';
 import authRoutes from './routes/auth.routes.js';
+import initRoutes from './routes/init.routes.js';
 import categorieRoutes from './routes/categorie.routes.js';
 import produitRoutes from './routes/produit.routes.js';
 import venteRoutes from './routes/vente.routes.js';
@@ -41,6 +42,7 @@ app.get('/api', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/init', initRoutes);
 app.use('/api/categories', categorieRoutes);
 app.use('/api/produits', produitRoutes);
 app.use('/api/ventes', venteRoutes);
