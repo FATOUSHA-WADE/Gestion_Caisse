@@ -69,9 +69,23 @@ export async function sendEmail(to, subject, html) {
   } catch (error) {
     console.error('[EMAIL ERROR]', error.message);
     if (error.code === 'EAUTH') {
-      console.error('[EMAIL] Erreur d\'authentification SMTP. Vérifiez vos identifiants.');
+      console.error('[EMAIL] Erreur d\'authentification SMTP. Vérifiez vos identifiants et votre mot de passe d\'application Gmail.');
+      return { 
+        success: false, 
+        error: 'Erreur d\'authentification SMTP. Veuillez vérifier les identifiants dans les variables d\'environnement.' 
+      };
     } else if (error.code === 'ECONNECTION') {
       console.error('[EMAIL] Impossible de se connecter au serveur SMTP.');
+      return { 
+        success: false, 
+        error: 'Impossible de se connecter au serveur SMTP. Vérifiez la connexion internet.' 
+      };
+    } else if (error.responseCode === 535) {
+      console.error('[EMAIL] Authentification échouée. Le mot de passe d\'application peut être invalide ou expiré.');
+      return { 
+        success: false, 
+        error: 'Mot de passe d\'application invalide ou expiré. Veuillez en générer un nouveau dans votre compte Google.' 
+      };
     }
     return { 
       success: false, 
