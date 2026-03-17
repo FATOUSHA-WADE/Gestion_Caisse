@@ -20,7 +20,7 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://gestion-caisse-frontend.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
