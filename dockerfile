@@ -3,19 +3,19 @@ FROM node:20
 # Dossier principal
 WORKDIR /app
 
-# Copie des fichiers package
+# Copie des fichiers package et prisma
 COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install dependencies
 RUN npm install
 
 # Copie du reste du code
 COPY . .
 
-# Génère Prisma Client
+# Génère Prisma Client et applique les migrations
 RUN npx prisma generate
-# Optionnel : seed la base (à ne faire que si tu veux peupler la base à chaque build)
-# RUN npx prisma db seed
 
 EXPOSE 3000
 
 CMD ["node", "server.js"]
-
