@@ -40,7 +40,10 @@ class AuthService {
       user: {
         id: user.id,
         nom: user.nom,
-        role: user.role
+        telephone: user.telephone,
+        email: user.email,
+        role: user.role,
+        photo: user.photo
       }
     };
   }
