@@ -1,8 +1,11 @@
 import jwt from 'jsonwebtoken';
 
 const generateToken = (payload) => {
+  // JWT_EXPIRES_IN doit être un nombre (secondes) ou une chaîne comme "8h", "7d"
+  const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
+  
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN
+    expiresIn: expiresIn
   });
 };
 
