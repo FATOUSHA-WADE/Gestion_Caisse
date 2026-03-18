@@ -4,6 +4,12 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 
+// Create exports directory if it doesn't exist
+const exportsDir = path.join(process.cwd(), 'exports');
+if (!fs.existsSync(exportsDir)) {
+  fs.mkdirSync(exportsDir, { recursive: true });
+}
+
 function formatDateLong(date) {
   const d = new Date(date);
   return d.toLocaleDateString('fr-FR', {

@@ -8,6 +8,7 @@ class RecuService {
     const vente = await prisma.vente.findUnique({
       where: { id: Number(venteId) },
       include: {
+        user: true,
         lignes: {
           include: { produit: true }
         }
@@ -28,13 +29,42 @@ class RecuService {
       }
     });
 
-    return recu;
+    // Return recu with vente data included
+    return {
+      ...recu,
+      vente: {
+        ...vente,
+        user: vente.user,
+        lignes: vente.lignes
+      }
+    };
   }
 
   async getRecu(venteId) {
-    return await prisma.recu.findUnique({
-      where: { venteId: Number(venteId) }
+    const recu = await prisma.recu.findUnique({
+      where: { venteId: Number(venteId) },
+      include: {
+        vente: {
+          include: {
+            user: true,
+            lignes: {
+              include: { produit: true }
+            }
+          }
+        }
+      }
     });
+    
+    if (recu) {
+      return {
+        ...recu,
+        total: recu.vente?.total,
+        modePaiement: recu.vente?.modePaiement,
+        user: recu.vente?.user,
+        lignes: recu.vente?.lignes
+      };
+    }
+    return null;
   }
 }
 

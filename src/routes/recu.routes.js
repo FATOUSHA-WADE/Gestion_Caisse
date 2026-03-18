@@ -9,4 +9,10 @@ router.get('/:venteId',
   recuController.get
 );
 
+// Route pour télécharger le PDF
+router.get('/:venteId/pdf',
+  authMiddleware,
+  recuController.downloadPdf
+);
+
 export default router;
