@@ -13,6 +13,7 @@ import recuRoutes from './routes/recu.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import mouvementStockRoutes from './routes/mouvementStock.routes.js';
+import parametreRoutes from './routes/parametre.routes.js';
 import './listeners/notification.listener.js';
 import { verifierCAJournalier } from './listeners/notification.listener.js';
 
@@ -50,6 +51,7 @@ app.use('/api/recus', recuRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/mouvements-stock', mouvementStockRoutes);
+app.use('/api/parametres', parametreRoutes);
 
 setInterval(() => {
   verifierCAJournalier();

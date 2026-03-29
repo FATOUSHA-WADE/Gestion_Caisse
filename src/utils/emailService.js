@@ -10,19 +10,26 @@ const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = process.env.SMTP_PORT || 587;
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_FROM = process.env.SMTP_FROM || 'fkwade026@gmail.com';
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 
 /**
  * Créer le transporteur nodemailer
  */
 function createTransporter() {
+  if (!SMTP_USER || !SMTP_PASS) {
+    throw new Error('SMTP credentials not configured');
+  }
+  
   return nodemailer.createTransport({
     host: SMTP_HOST,
     port: parseInt(SMTP_PORT),
-    secure: SMTP_PORT === '465',
+    secure: parseInt(SMTP_PORT) === 465,
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS
+    },
+    tls: {
+      rejectUnauthorized: false
     }
   });
 }
@@ -32,14 +39,22 @@ function createTransporter() {
  * @param {string} to - Destinataire
  * @param {string} subject - Sujet
  * @param {string} html - Contenu HTML
+ * @param {string} text - Contenu texte (optionnel)
  * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
  */
-export async function sendEmail(to, subject, html) {
-  // Vérifier si les credentials SMTP sont configurés
-  if (!SMTP_USER || !SMTP_PASS || SMTP_USER === 'your_email@gmail.com' || SMTP_PASS === 'your_app_password') {
+export async function sendEmail(to, subject, html, text = null) {
+  // Validate email format
+  if (!to || !to.includes('@')) {
+    console.error('[EMAIL ERROR] Invalid email address:', to);
+    return { success: false, error: 'Adresse email invalide' };
+  }
+
+  // Check if SMTP credentials are configured
+  if (!SMTP_USER || !SMTP_PASS || SMTP_USER === 'your_email@gmail.com') {
     console.log(`[EMAIL SIMULÉ] SMTP non configuré - Email simulé`);
     console.log(`[EMAIL SIMULÉ] À: ${to}, Sujet: ${subject}`);
-    console.log(`[EMAIL SIMULÉ] Code de vérification (pour tests): ${html.match(/(\d{6})/)?.[1] || 'non trouvé'}`);
+    const code = html.match(/(\d{6})/)?.[1] || 'non trouvé';
+    console.log(`[EMAIL SIMULÉ] Code de vérification: ${code}`);
     return { 
       success: true, 
       messageId: `sim_${Date.now()}`,
@@ -48,49 +63,87 @@ export async function sendEmail(to, subject, html) {
   }
 
   try {
+    console.log(`[EMAIL] Préparation de l'envoi à ${to}...`);
+    console.log(`[EMAIL] Serveur SMTP: ${SMTP_HOST}:${SMTP_PORT}`);
+    console.log(`[EMAIL] Utilisateur: ${SMTP_USER}`);
+    
     const transporter = createTransporter();
     
-    // Verify connection
-    await transporter.verify();
+    // Verify connection with timeout
+    const verifyPromise = transporter.verify();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('SMTP connection timeout')), 10000)
+    );
+    
+    await Promise.race([verifyPromise, timeoutPromise]);
     console.log(`[EMAIL] Connexion SMTP établie avec succès`);
     
     const info = await transporter.sendMail({
       from: SMTP_FROM,
       to,
       subject,
-      html
+      html,
+      text: text || html.replace(/<[^>]*>/g, '') // Plain text fallback
     });
 
     console.log(`[EMAIL] Message envoyé avec succès: ${info.messageId}`);
+    console.log(`[EMAIL] Réponse SMTP: ${info.response}`);
     return { 
       success: true, 
       messageId: info.messageId 
     };
   } catch (error) {
     console.error('[EMAIL ERROR]', error.message);
-    if (error.code === 'EAUTH') {
-      console.error('[EMAIL] Erreur d\'authentification SMTP. Vérifiez vos identifiants et votre mot de passe d\'application Gmail.');
+    console.error('[EMAIL ERROR] Stack:', error.stack);
+    
+    if (error.message === 'SMTP connection timeout') {
+      return { 
+        success: false, 
+        error: 'Délai de connexion SMTP dépassé. Vérifiez votre connexion internet.' 
+      };
+    }
+    
+    if (error.code === 'EAUTH' || error.message?.includes('Invalid credentials')) {
+      console.error('[EMAIL] Erreur d\'authentification SMTP. Vérifiez vos identifiants.');
       return { 
         success: false, 
         error: 'Erreur d\'authentification SMTP. Veuillez vérifier les identifiants dans les variables d\'environnement.' 
       };
-    } else if (error.code === 'ECONNECTION') {
+    } else if (error.code === 'ECONNECTION' || error.message?.includes('ECONNREFUSED')) {
       console.error('[EMAIL] Impossible de se connecter au serveur SMTP.');
       return { 
         success: false, 
         error: 'Impossible de se connecter au serveur SMTP. Vérifiez la connexion internet.' 
       };
-    } else if (error.responseCode === 535) {
-      console.error('[EMAIL] Authentification échouée. Le mot de passe d\'application peut être invalide ou expiré.');
+    } else if (error.responseCode === 535 || error.message?.includes('535')) {
+      console.error('[EMAIL] Authentification échouée. Le mot de passe d\'application peut être invalide.');
       return { 
         success: false, 
-        error: 'Mot de passe d\'application invalide ou expiré. Veuillez en générer un nouveau dans votre compte Google.' 
+        error: 'Mot de passe d\'application invalide. Veuillez en générer un nouveau dans votre compte Google.' 
       };
     }
     return { 
       success: false, 
       error: error.message 
     };
+  }
+}
+
+/**
+ * Tester la connexion SMTP
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export async function testSMTPConnection() {
+  if (!SMTP_USER || !SMTP_PASS) {
+    return { success: false, message: 'SMTP non configuré dans les variables d\'environnement' };
+  }
+
+  try {
+    const transporter = createTransporter();
+    await transporter.verify();
+    return { success: true, message: 'Connexion SMTP réussie!' };
+  } catch (error) {
+    return { success: false, message: `Erreur: ${error.message}` };
   }
 }
 

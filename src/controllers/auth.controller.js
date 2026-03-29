@@ -84,8 +84,34 @@ class AuthController {
 
       // Envoyer le code par email si l'utilisateur a un email
       if (user.email) {
-        await sendPasswordResetEmail(user.email, verificationCode, user.nom);
-        console.log(`Code de vérification envoyé par email à ${user.email}`);
+        try {
+          const emailResult = await sendPasswordResetEmail(user.email, verificationCode, user.nom);
+          
+          if (emailResult.success) {
+            console.log(`Code de vérification envoyé par email à ${user.email}`);
+            if (emailResult.simulated) {
+              console.log(`[MODE SIMULATION] Code: ${verificationCode}`);
+            }
+          } else {
+            console.error(`Échec envoi email: ${emailResult.error}`);
+            // En mode développement, continuer quand même
+            if (process.env.NODE_ENV === 'production') {
+              return res.status(500).json({
+                success: false,
+                message: "Erreur lors de l'envoi de l'email. Veuillez réessayer plus tard."
+              });
+            }
+          }
+        } catch (emailError) {
+          console.error("Erreur envoi email:", emailError);
+          // En mode développement, ne pas bloquer si l'email échoue
+          if (process.env.NODE_ENV === 'production') {
+            return res.status(500).json({
+              success: false,
+              message: "Erreur lors de l'envoi de l'email"
+            });
+          }
+        }
       } else {
         // Pas d'email, renvoyer un message d'erreur
         return res.status(400).json({
@@ -203,6 +229,14 @@ class AuthController {
         }
       });
 
+      // Add full photo URL (use dynamic base URL)
+      if (user.photo) {
+        const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        user.photo = user.photo.startsWith('http') 
+          ? user.photo 
+          : `${baseUrl}/uploads/${user.photo}`;
+      }
+
       res.json(user);
     } catch (error) {
       next(error);
@@ -226,7 +260,18 @@ class AuthController {
         orderBy: { createdAt: 'desc' }
       });
 
-      res.json({ success: true, data: users });
+      // Add full photo URLs to each user
+      const usersWithPhotoUrls = users.map(user => {
+        const baseUrl = process.env.API_BASE_URL || 'https://gestion-caisse.onrender.com';
+        return {
+          ...user,
+          photo: user.photo 
+            ? (user.photo.startsWith('http') ? user.photo : `${baseUrl}/uploads/${user.photo}`)
+            : null
+        };
+      });
+
+      res.json({ success: true, data: usersWithPhotoUrls });
     } catch (error) {
       next(error);
     }

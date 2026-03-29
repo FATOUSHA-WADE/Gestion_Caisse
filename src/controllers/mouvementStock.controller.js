@@ -16,7 +16,6 @@ class MouvementStockController {
       next(error);
     }
   }
-
   async getById(req, res, next) {
     try {
       const mouvement = await mouvementStockService.getById(req.params.id);
@@ -30,7 +29,6 @@ class MouvementStockController {
       next(error);
     }
   }
-
   async create(req, res, next) {
     try {
       const { produitId, type, quantite, quantiteAvant, quantiteApres, motif } = req.body;
@@ -56,5 +54,4 @@ class MouvementStockController {
     }
   }
 }
-
 export default new MouvementStockController();

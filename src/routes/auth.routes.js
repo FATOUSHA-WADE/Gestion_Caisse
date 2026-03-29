@@ -84,6 +84,13 @@ router.post('/setup', async (req, res) => {
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 
+// Route pour tester la connexion SMTP
+router.post('/test-email', async (req, res) => {
+  const { testSMTPConnection } = await import('../utils/emailService.js');
+  const result = await testSMTPConnection();
+  res.json(result);
+});
+
 // Route pour récupérer l'utilisateur connecté
 router.get('/me', authMiddleware, authController.me);
 
@@ -109,7 +116,10 @@ router.put('/users/me/photo', authMiddleware, upload.single('photo'), async (req
       data: { photo }
     });
     
-    res.json({ success: true, message: "Photo mise à jour", photo });
+    // Return full URL for the photo (use dynamic base URL)
+    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const photoUrl = `${baseUrl}/uploads/${photo}`;
+    res.json({ success: true, message: "Photo mise à jour", photo: photoUrl });
   } catch (error) {
     next(error);
   }

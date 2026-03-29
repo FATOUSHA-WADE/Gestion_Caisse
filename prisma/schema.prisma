@@ -191,3 +191,26 @@ enum NotifType {
   user_cree
   rapport_ca
 }
+
+// ── Paramètres du système
+model Parametre {
+  id                    Int      @id @default(autoincrement())
+  nomCommerce           String   @default("GESTICOM")
+  adresse               String?
+  telephone             String?
+  email                 String?
+  devise                String   @default("FCFA")
+  tauxTva               Float    @default(0)
+  messagePiedRecu       String?
+  logo                  String?
+  couleurPrincipale     String   @default("#f97316")
+  modesPaiement         String[] @default(["ESPECES", "CARTE", "ORANGE_MONEY", "WAVE"])
+  alertesStock          Boolean  @default(true)
+  generationRecuAuto    Boolean  @default(true)
+  langue                String   @default("fr")
+  sessionsSimultanees   Int      @default(1)
+  requirePasswordChange Boolean  @default(false)
+  dureeSession          Int      @default(30)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
