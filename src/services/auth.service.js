@@ -43,7 +43,7 @@ class AuthService {
         telephone: user.telephone,
         email: user.email,
         role: user.role,
-        photo: user.photo
+        photo: user.photo ? `${process.env.API_BASE_URL || 'http://localhost:3000'}/uploads/${user.photo}` : null
       }
     };
   }

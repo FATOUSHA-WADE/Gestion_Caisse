@@ -71,48 +71,59 @@ class ParametreController {
         logoValue = req.file.filename;
       }
 
+      // Parse modesPaiement if it's a string (JSON)
+      let parsedModesPaiement = modesPaiement;
+      if (typeof modesPaiement === 'string') {
+        try {
+          parsedModesPaiement = JSON.parse(modesPaiement);
+        } catch (e) {
+          parsedModesPaiement = ["ESPECES", "CARTE", "ORANGE_MONEY", "WAVE"];
+        }
+      }
+
       if (parametres) {
-        // Update existing
+        // Update existing with more robust field handling
+        const updateData = {};
+        if (nomCommerce !== undefined) updateData.nomCommerce = nomCommerce;
+        if (adresse !== undefined) updateData.adresse = adresse || null;
+        if (telephone !== undefined) updateData.telephone = telephone || null;
+        if (email !== undefined) updateData.email = email || null;
+        if (devise !== undefined) updateData.devise = devise || 'FCFA';
+        if (tauxTva !== undefined) updateData.tauxTva = parseFloat(tauxTva) || 0;
+        if (messagePiedRecu !== undefined) updateData.messagePiedRecu = messagePiedRecu || null;
+        if (logoValue !== undefined) updateData.logo = logoValue;
+        if (couleurPrincipale !== undefined) updateData.couleurPrincipale = couleurPrincipale || '#f97316';
+        if (parsedModesPaiement !== undefined) updateData.modesPaiement = parsedModesPaiement;
+        if (alertesStock !== undefined) updateData.alertesStock = alertesStock === 'true' || alertesStock === true;
+        if (generationRecuAuto !== undefined) updateData.generationRecuAuto = generationRecuAuto === 'true' || generationRecuAuto === true;
+        if (langue !== undefined) updateData.langue = langue || 'fr';
+        if (sessionsSimultanees !== undefined) updateData.sessionsSimultanees = parseInt(sessionsSimultanees) || 1;
+        if (requirePasswordChange !== undefined) updateData.requirePasswordChange = requirePasswordChange === 'true' || requirePasswordChange === true;
+        if (dureeSession !== undefined) updateData.dureeSession = parseInt(dureeSession) || 30;
+
         parametres = await prisma.parametre.update({
           where: { id: parametres.id },
-          data: {
-            ...(nomCommerce && { nomCommerce }),
-            ...(adresse !== undefined && { adresse }),
-            ...(telephone !== undefined && { telephone }),
-            ...(email !== undefined && { email }),
-            ...(devise && { devise }),
-            ...(tauxTva !== undefined && { tauxTva: parseFloat(tauxTva) }),
-            ...(messagePiedRecu !== undefined && { messagePiedRecu }),
-            ...(logoValue && { logo: logoValue }),
-            ...(couleurPrincipale && { couleurPrincipale }),
-            ...(modesPaiement && { modesPaiement }),
-            ...(alertesStock !== undefined && { alertesStock }),
-            ...(generationRecuAuto !== undefined && { generationRecuAuto }),
-            ...(langue && { langue }),
-            ...(sessionsSimultanees !== undefined && { sessionsSimultanees: parseInt(sessionsSimultanees) }),
-            ...(requirePasswordChange !== undefined && { requirePasswordChange }),
-            ...(dureeSession !== undefined && { dureeSession: parseInt(dureeSession) })
-          }
+          data: updateData
         });
       } else {
         // Create new
         parametres = await prisma.parametre.create({
           data: {
             nomCommerce: nomCommerce || "GESTICOM",
-            adresse,
-            telephone,
-            email,
+            adresse: adresse || null,
+            telephone: telephone || null,
+            email: email || null,
             devise: devise || "FCFA",
             tauxTva: tauxTva ? parseFloat(tauxTva) : 0,
-            messagePiedRecu,
-            logo: logoValue,
+            messagePiedRecu: messagePiedRecu || "Merci de votre visite ! À bientôt.",
+            logo: logoValue || null,
             couleurPrincipale: couleurPrincipale || "#f97316",
-            modesPaiement: modesPaiement || ["ESPECES", "CARTE", "ORANGE_MONEY", "WAVE"],
-            alertesStock: alertesStock ?? true,
-            generationRecuAuto: generationRecuAuto ?? true,
+            modesPaiement: parsedModesPaiement || ["ESPECES", "CARTE", "ORANGE_MONEY", "WAVE"],
+            alertesStock: alertesStock === 'true' || alertesStock === true || true,
+            generationRecuAuto: generationRecuAuto === 'true' || generationRecuAuto === true || true,
             langue: langue || "fr",
             sessionsSimultanees: sessionsSimultanees ? parseInt(sessionsSimultanees) : 1,
-            requirePasswordChange: requirePasswordChange ?? false,
+            requirePasswordChange: requirePasswordChange === 'true' || requirePasswordChange === true || false,
             dureeSession: dureeSession ? parseInt(dureeSession) : 30
           }
         });
@@ -128,6 +139,7 @@ class ParametreController {
       
       res.json({ success: true, message: "Paramètres mis à jour", data: parametres });
     } catch (error) {
+      console.error('[Parametre] Error updating:', error);
       next(error);
     }
   }

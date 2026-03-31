@@ -86,9 +86,37 @@ router.post('/reset-password', authController.resetPassword);
 
 // Route pour tester la connexion SMTP
 router.post('/test-email', async (req, res) => {
-  const { testSMTPConnection } = await import('../utils/emailService.js');
-  const result = await testSMTPConnection();
-  res.json(result);
+  const { testSMTPConnection, sendTestEmail } = await import('../utils/emailService.js');
+  
+  // Tester d'abord la connexion
+  const connectionTest = await testSMTPConnection();
+  
+  if (!connectionTest.success) {
+    return res.json({
+      success: false,
+      message: 'Connexion SMTP échouée',
+      error: connectionTest.message,
+      details: connectionTest
+    });
+  }
+  
+  // Si un email est fourni, envoyer un email de test
+  const { email } = req.body;
+  if (email) {
+    const sendResult = await sendTestEmail(email);
+    return res.json({
+      success: sendResult.success,
+      message: sendResult.success ? 'Email de test envoyé!' : 'Échec envoi email',
+      connection: connectionTest,
+      sendResult
+    });
+  }
+  
+  res.json({
+    success: true,
+    message: 'Connexion SMTP réussie!',
+    details: connectionTest
+  });
 });
 
 // Route pour récupérer l'utilisateur connecté

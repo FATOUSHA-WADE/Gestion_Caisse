@@ -35,6 +35,8 @@ class AuthController {
   async forgotPassword(req, res, next) {
     try {
       const { identifier } = req.body;
+      
+      console.log('[Auth] forgotPassword called:', { identifier });
 
       if (!identifier) {
         return res.status(400).json({
@@ -53,11 +55,21 @@ class AuthController {
         }
       });
 
+      console.log('[Auth] User found:', user ? { id: user.id, email: user.email } : null);
+
       if (!user) {
         // Pour des raisons de sécurité, on ne révèle pas si l'utilisateur existe ou non
         return res.status(200).json({
           success: true,
           message: "Si un compte existe avec ces informations, un code de vérification sera envoyé"
+        });
+      }
+
+      // Vérifier que l'utilisateur a un email
+      if (!user.email) {
+        return res.status(400).json({
+          success: false,
+          message: "Aucun email associé à ce compte. Veuillez contacter l'administrateur."
         });
       }
 
@@ -82,35 +94,26 @@ class AuthController {
         }
       });
 
+      console.log('[Auth] Code généré:', verificationCode, 'pour userId:', user.id);
+
       // Envoyer le code par email si l'utilisateur a un email
       if (user.email) {
         try {
           const emailResult = await sendPasswordResetEmail(user.email, verificationCode, user.nom);
           
-          if (emailResult.success) {
-            console.log(`Code de vérification envoyé par email à ${user.email}`);
-            if (emailResult.simulated) {
-              console.log(`[MODE SIMULATION] Code: ${verificationCode}`);
-            }
-          } else {
-            console.error(`Échec envoi email: ${emailResult.error}`);
-            // En mode développement, continuer quand même
-            if (process.env.NODE_ENV === 'production') {
-              return res.status(500).json({
-                success: false,
-                message: "Erreur lors de l'envoi de l'email. Veuillez réessayer plus tard."
-              });
-            }
+          console.log(`Email send result:`, emailResult);
+          
+          // En cas d'erreur, logger mais ne pas bloquer le processus
+          if (!emailResult.success) {
+            console.error('[EMAIL] Failed to send email:', emailResult.error);
+          }
+          
+          // Afficher le code en mode développement pour les tests
+          if (emailResult.simulated || process.env.NODE_ENV === 'development') {
+            console.log(`[DÉVELOPPEMENT] Code de vérification: ${verificationCode}`);
           }
         } catch (emailError) {
           console.error("Erreur envoi email:", emailError);
-          // En mode développement, ne pas bloquer si l'email échoue
-          if (process.env.NODE_ENV === 'production') {
-            return res.status(500).json({
-              success: false,
-              message: "Erreur lors de l'envoi de l'email"
-            });
-          }
         }
       } else {
         // Pas d'email, renvoyer un message d'erreur
@@ -120,8 +123,10 @@ class AuthController {
         });
       }
 
-      // Logger le code en développement
-      console.log(`Code de vérification pour ${user.email}: ${verificationCode}`);
+      // En développement, toujours afficher le code pour les tests
+      if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+        console.log(`Code de vérification pour ${user.email}: ${verificationCode}`);
+      }
 
       // Masquer l'email pour l'affichage (ex: j***@gmail.com)
       const maskedEmail = user.email.replace(/(.{1})(.*)(@.*)/, '$1***$3');
@@ -141,6 +146,12 @@ class AuthController {
   async resetPassword(req, res, next) {
     try {
       const { token, code, newPassword } = req.body;
+      
+      console.log('[Auth] resetPassword called:', { 
+        tokenLength: token?.length, 
+        codeLength: code?.length,
+        hasPassword: !!newPassword 
+      });
 
       if (!token || !code || !newPassword) {
         return res.status(400).json({
@@ -162,7 +173,9 @@ class AuthController {
       try {
         const decoded = Buffer.from(token, 'base64').toString('utf-8');
         userId = parseInt(decoded.split(':')[0]);
+        console.log('[Auth] Token decoded, userId:', userId);
       } catch (e) {
+        console.log('[Auth] Token decode error:', e.message);
         return res.status(400).json({
           success: false,
           message: "Token invalide"
@@ -180,6 +193,8 @@ class AuthController {
           }
         }
       });
+
+      console.log('[Auth] Reset record found:', !!resetRecord);
 
       if (!resetRecord) {
         return res.status(400).json({
@@ -203,12 +218,15 @@ class AuthController {
         data: { used: true }
       });
 
+      console.log('[Auth] Password reset successful for userId:', userId);
+
       res.status(200).json({
         success: true,
         message: "Mot de passe réinitialisé avec succès"
       });
 
     } catch (error) {
+      console.error('[Auth] resetPassword error:', error);
       next(error);
     }
   }
@@ -262,7 +280,7 @@ class AuthController {
 
       // Add full photo URLs to each user
       const usersWithPhotoUrls = users.map(user => {
-        const baseUrl = process.env.API_BASE_URL || 'https://gestion-caisse.onrender.com';
+        const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
         return {
           ...user,
           photo: user.photo 
@@ -347,6 +365,12 @@ class AuthController {
           updatedAt: true
         }
       });
+
+      // Add full photo URL to response
+      if (user.photo) {
+        const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        user.photo = user.photo.startsWith('http') ? user.photo : `${baseUrl}/uploads/${user.photo}`;
+      }
 
       res.json({
         success: true,

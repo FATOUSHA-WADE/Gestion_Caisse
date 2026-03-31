@@ -16,6 +16,10 @@ COPY . .
 # Génère Prisma Client
 RUN npx prisma generate
 
+# Variables d'environnement (à configurer dans Render Dashboard)
+# SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+# Ces variables doivent être définies dans les paramètres Render
+
 EXPOSE 3000
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]

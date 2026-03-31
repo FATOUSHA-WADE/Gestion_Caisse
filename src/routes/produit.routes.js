@@ -95,7 +95,7 @@ router.patch('/:id/stock',
 
 router.delete('/:id',
   authMiddleware,
-  roleMiddleware(['admin']),
+  roleMiddleware(['admin', 'gerant']),
   produitController.delete
 );
 
