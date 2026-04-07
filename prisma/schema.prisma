@@ -211,6 +211,15 @@ model Parametre {
   sessionsSimultanees   Int      @default(1)
   requirePasswordChange Boolean  @default(false)
   dureeSession          Int      @default(30)
+  // UI settings
+  modeFluide            Boolean  @default(false)
+  modeRTL               Boolean  @default(false)
+  navigationPosition    String   @default("vertical")
+  // Theme settings
+  themeMode             String   @default("light") // "light", "dark", "custom"
+  customBgColor         String?  // Custom background color for custom mode
+  customTextColor       String?  // Custom text color for custom mode
+  customAccentColor     String?  // Custom accent color (overrides couleurPrincipale)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }

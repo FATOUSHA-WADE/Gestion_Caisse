@@ -35,7 +35,7 @@ class ProduitController {
     try {
       const data = {
         ...req.body,
-        ...(req.file && { image: 'Images/' + req.file.originalname }),
+        ...(req.file && { image: 'images/' + req.file.originalname }),
         categorieId: req.body.categorieId ? Number(req.body.categorieId) : undefined,
         prixVente: req.body.prixVente ? Number(req.body.prixVente) : undefined,
         stock: req.body.stock ? Number(req.body.stock) : undefined,
@@ -56,7 +56,7 @@ class ProduitController {
     try {
       const data = {
         ...req.body,
-        ...(req.file && { image: 'Images/' + req.file.originalname }),
+        ...(req.file && { image: 'images/' + req.file.originalname }),
         categorieId: req.body.categorieId ? Number(req.body.categorieId) : undefined,
         prixVente: req.body.prixVente ? Number(req.body.prixVente) : undefined,
         stock: req.body.stock ? Number(req.body.stock) : undefined,

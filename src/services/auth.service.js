@@ -2,12 +2,15 @@
 import prisma from '../config/database.js';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../config/jwt.js';
+import { normalizePhoneNumber } from '../utils/phone.utils.js';
 
 class AuthService {
 
   async login(telephone, password) {
+    const normalizedTelephone = normalizePhoneNumber(telephone);
+    
     const user = await prisma.user.findUnique({
-      where: { telephone }
+      where: { telephone: normalizedTelephone }
     });
 
     if (!user || user.statut === 'inactif') {

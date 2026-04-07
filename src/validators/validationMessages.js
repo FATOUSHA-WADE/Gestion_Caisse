@@ -5,6 +5,7 @@ export const VALIDATION_MESSAGES = {
   email: "L'email doit être valide",
   role: 'Le rôle est invalide',
   telephone: 'Le téléphone doit être une chaîne de caractères',
+  invalidPhone: 'Le numéro de téléphone doit être au format 77XXXXXXX ou 78XXXXXXX (local) ou +22177XXXXXXX/+22178XXXXXXX (international)',
   nom: 'Le nom est obligatoire',
   produitNom: 'Le nom du produit est obligatoire',
   prixVente: 'Le prix de vente est obligatoire',

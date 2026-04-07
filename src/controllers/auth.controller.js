@@ -5,6 +5,7 @@ import prisma from '../config/database.js';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/emailService.js';
+import { normalizePhoneNumber } from '../utils/phone.utils.js';
 
 class AuthController {
 
@@ -45,10 +46,13 @@ class AuthController {
         });
       }
 
+      const normalizedIdentifier = normalizePhoneNumber(identifier);
+
       // Chercher l'utilisateur par téléphone ou email
       const user = await prisma.user.findFirst({
         where: {
           OR: [
+            { telephone: normalizedIdentifier },
             { telephone: identifier },
             { email: identifier }
           ]
@@ -304,11 +308,12 @@ class AuthController {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
+      const normalizedTelephone = normalizePhoneNumber(telephone);
 
       const user = await prisma.user.create({
         data: {
           nom,
-          telephone,
+          telephone: normalizedTelephone,
           email,
           password: hashedPassword,
           role: role || 'caissier',
@@ -340,7 +345,11 @@ class AuthController {
       const { id } = req.params;
       const { nom, telephone, email, password, role, statut } = req.body;
 
-      const data = { nom, telephone, email, role, statut };
+      const data = { nom, email, role, statut };
+      
+      if (telephone) {
+        data.telephone = normalizePhoneNumber(telephone);
+      }
       
       // Handle photo upload
       if (req.file) {

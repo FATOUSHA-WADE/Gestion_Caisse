@@ -1,15 +1,23 @@
 import { z } from 'zod';
 import { VALIDATION_MESSAGES } from './validationMessages.js';
+import { isValidSenegalPhoneNumber } from '../utils/phone.utils.js';
+
+const phoneSchema = z.string({
+  required_error: VALIDATION_MESSAGES.required,
+  invalid_type_error: VALIDATION_MESSAGES.telephone
+}).refine(
+  (phone) => isValidSenegalPhoneNumber(phone),
+  {
+    message: VALIDATION_MESSAGES.invalidPhone
+  }
+);
 
 export const userSchema = z.object({
   nom: z.string({
     required_error: VALIDATION_MESSAGES.nom,
     invalid_type_error: VALIDATION_MESSAGES.string
   }),
-  telephone: z.string({
-    required_error: VALIDATION_MESSAGES.required,
-    invalid_type_error: VALIDATION_MESSAGES.telephone
-  }),
+  telephone: phoneSchema,
   email: z.string().email(VALIDATION_MESSAGES.email).or(z.literal('').or(z.null())),
   password: z.string({
     required_error: VALIDATION_MESSAGES.required,

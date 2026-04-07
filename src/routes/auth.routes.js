@@ -153,6 +153,22 @@ router.put('/users/me/photo', authMiddleware, upload.single('photo'), async (req
   }
 });
 
+// Route pour supprimer sa photo de profil
+router.delete('/users/me/photo', authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    
+    await prisma.user.update({
+      where: { id: userId },
+      data: { photo: null }
+    });
+    
+    res.json({ success: true, message: "Photo supprimée", photo: null });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Route pour changer le mot de passe
 router.post('/change-password', authMiddleware, authController.changePassword);
 

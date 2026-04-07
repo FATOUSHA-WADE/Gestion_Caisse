@@ -4,10 +4,13 @@ class ParametreController {
   // Get settings
   async get(req, res, next) {
     try {
+      console.log('[Parametre] GET - Starting request');
       let parametres = await prisma.parametre.findFirst();
+      console.log('[Parametre] GET - Found:', parametres ? 'yes' : 'no');
       
       // If no settings exist, create default
       if (!parametres) {
+        console.log('[Parametre] GET - Creating default settings');
         parametres = await prisma.parametre.create({
           data: {
             nomCommerce: "GESTICOM",
@@ -21,9 +24,17 @@ class ParametreController {
             langue: "fr",
             sessionsSimultanees: 1,
             requirePasswordChange: false,
-            dureeSession: 30
+            dureeSession: 30,
+            modeFluide: false,
+            modeRTL: false,
+            navigationPosition: "vertical",
+            themeMode: "light",
+            customBgColor: null,
+            customTextColor: null,
+            customAccentColor: null
           }
         });
+        console.log('[Parametre] GET - Created default settings:', parametres.id);
       }
       
       // Add full logo URL if logo exists
@@ -36,6 +47,7 @@ class ParametreController {
       
       res.json({ success: true, data: parametres });
     } catch (error) {
+      console.error('[Parametre] GET - Error:', error);
       next(error);
     }
   }
@@ -43,6 +55,7 @@ class ParametreController {
   // Update settings
   async update(req, res, next) {
     try {
+      console.log('[Parametre] UPDATE - Starting request');
       const {
         nomCommerce,
         adresse,
@@ -59,11 +72,21 @@ class ParametreController {
         langue,
         sessionsSimultanees,
         requirePasswordChange,
-        dureeSession
+        dureeSession,
+        modeFluide,
+        modeRTL,
+        navigationPosition,
+        themeMode,
+        customBgColor,
+        customTextColor,
+        customAccentColor
       } = req.body;
+
+      console.log('[Parametre] UPDATE - Body keys:', Object.keys(req.body));
 
       // Get existing settings
       let parametres = await prisma.parametre.findFirst();
+      console.log('[Parametre] UPDATE - Found existing:', parametres ? 'yes, id: ' + parametres.id : 'no');
       
       // Handle logo upload
       let logoValue = logo;
@@ -100,13 +123,26 @@ class ParametreController {
         if (sessionsSimultanees !== undefined) updateData.sessionsSimultanees = parseInt(sessionsSimultanees) || 1;
         if (requirePasswordChange !== undefined) updateData.requirePasswordChange = requirePasswordChange === 'true' || requirePasswordChange === true;
         if (dureeSession !== undefined) updateData.dureeSession = parseInt(dureeSession) || 30;
+        // New UI settings
+        if (modeFluide !== undefined) updateData.modeFluide = modeFluide === 'true' || modeFluide === true;
+        if (modeRTL !== undefined) updateData.modeRTL = modeRTL === 'true' || modeRTL === true;
+        if (navigationPosition !== undefined) updateData.navigationPosition = navigationPosition || 'vertical';
+        // Theme settings
+        if (themeMode !== undefined) updateData.themeMode = themeMode || 'light';
+        if (customBgColor !== undefined) updateData.customBgColor = customBgColor || null;
+        if (customTextColor !== undefined) updateData.customTextColor = customTextColor || null;
+        if (customAccentColor !== undefined) updateData.customAccentColor = customAccentColor || null;
+
+        console.log('[Parametre] UPDATE - Update data keys:', Object.keys(updateData));
 
         parametres = await prisma.parametre.update({
           where: { id: parametres.id },
           data: updateData
         });
+        console.log('[Parametre] UPDATE - Updated successfully');
       } else {
         // Create new
+        console.log('[Parametre] UPDATE - Creating new settings');
         parametres = await prisma.parametre.create({
           data: {
             nomCommerce: nomCommerce || "GESTICOM",
@@ -124,9 +160,17 @@ class ParametreController {
             langue: langue || "fr",
             sessionsSimultanees: sessionsSimultanees ? parseInt(sessionsSimultanees) : 1,
             requirePasswordChange: requirePasswordChange === 'true' || requirePasswordChange === true || false,
-            dureeSession: dureeSession ? parseInt(dureeSession) : 30
+            dureeSession: dureeSession ? parseInt(dureeSession) : 30,
+            modeFluide: modeFluide === 'true' || modeFluide === true || false,
+            modeRTL: modeRTL === 'true' || modeRTL === true || false,
+            navigationPosition: navigationPosition || "vertical",
+            themeMode: themeMode || "light",
+            customBgColor: customBgColor || null,
+            customTextColor: customTextColor || null,
+            customAccentColor: customAccentColor || null
           }
         });
+        console.log('[Parametre] UPDATE - Created new, id:', parametres.id);
       }
       
       // Add full logo URL if logo exists
@@ -139,7 +183,7 @@ class ParametreController {
       
       res.json({ success: true, message: "Paramètres mis à jour", data: parametres });
     } catch (error) {
-      console.error('[Parametre] Error updating:', error);
+      console.error('[Parametre] UPDATE - Error:', error);
       next(error);
     }
   }
