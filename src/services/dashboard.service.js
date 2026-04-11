@@ -180,6 +180,57 @@ class DashboardService {
       }
     });
 
+    // 💰 Données Caisse - Ventes par utilisateur aujourd'hui
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const ventesParUser = await prisma.vente.groupBy({
+      by: ['userId'],
+      _sum: { total: true },
+      _count: { id: true },
+      where: {
+        createdAt: { gte: todayStart, lte: todayEnd },
+        statut: 'validee'
+      }
+    });
+
+    const usersWithSales = await prisma.user.findMany({
+      where: { statut: 'actif' },
+      select: { id: true, nom: true }
+    });
+
+    // Simuler les données de caisse (ouverture/fermeture)
+    // Dans une vraie implémentation, ces données viendraient d'un modèle CaisseSession
+    const listeVendeurs = usersWithSales.map(user => {
+      const userVente = ventesParUser.find(v => v.userId === user.id);
+      const totalVentes = Number(userVente?._sum?.total || 0);
+      const estimatedOpening = 500000; // Estimation - à remplacer par vraie donnée
+      const estimatedClosing = estimatedOpening + totalVentes;
+
+      return {
+        id: user.id,
+        nom: user.nom,
+        montantOuverture: estimatedOpening,
+        montantFermeture: estimatedClosing,
+        totalVentes: totalVentes,
+        statut: totalVentes > 0 ? 'actif' : 'inactif',
+        heureFermeture: totalVentes > 0 ? '18:00' : null,
+        nbVentes: userVente?._count?.id || 0
+      };
+    });
+
+    // Calculer le total d'ouverture et fermeture
+    const totalOuverture = listeVendeurs.reduce((sum, v) => sum + v.montantOuverture, 0);
+    const totalFermeture = listeVendeurs.reduce((sum, v) => sum + v.montantFermeture, 0);
+
+    // 💰 Caisse - Solde actuel = CA du jour
+    const montantOuvertureCaisse = totalOuverture;
+    const montantFermetureCaisse = totalFermeture;
+    const statutCaisse = 'fermee'; // À remplacer par vraie donnée
+    const heureFermetureCaisse = '23:59';
+
     return {
       caJour: caJour._sum.total || 0,
       caMois: caMois._sum.total || 0,
@@ -220,7 +271,14 @@ class DashboardService {
         createdAt: m.createdAt,
         produit: m.produit,
         user: m.user
-      }))
+      })),
+      // Données Caisse
+      montantOuverture: montantOuvertureCaisse,
+      montantFermeture: montantFermetureCaisse,
+      nombreVendeurs: usersWithSales.length,
+      listeVendeurs,
+      statutCaisse,
+      heureFermetureCaisse
     };
   }
 

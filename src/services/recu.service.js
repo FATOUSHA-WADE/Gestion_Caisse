@@ -19,7 +19,8 @@ class RecuService {
       throw new Error("Vente introuvable");
     }
 
-    const urlPdf = await generatePDF(vente, vente.lignes);
+    const parametres = await prisma.parametre.findFirst();
+    const urlPdf = await generatePDF(vente, vente.lignes, parametres);
 
     const recu = await prisma.recu.create({
       data: {
@@ -29,7 +30,6 @@ class RecuService {
       }
     });
 
-    // Return recu with vente data included
     return {
       ...recu,
       vente: {
@@ -41,30 +41,37 @@ class RecuService {
   }
 
   async getRecu(venteId) {
-    const recu = await prisma.recu.findUnique({
-      where: { venteId: Number(venteId) },
+    const vente = await prisma.vente.findUnique({
+      where: { id: Number(venteId) },
       include: {
-        vente: {
-          include: {
-            user: true,
-            lignes: {
-              include: { produit: true }
-            }
-          }
+        user: true,
+        lignes: {
+          include: { produit: true }
         }
       }
     });
     
-    if (recu) {
-      return {
-        ...recu,
-        total: recu.vente?.total,
-        modePaiement: recu.vente?.modePaiement,
-        user: recu.vente?.user,
-        lignes: recu.vente?.lignes
-      };
-    }
-    return null;
+    if (!vente) return null;
+    
+    const parametres = await prisma.parametre.findFirst();
+    const urlPdf = await generatePDF(vente, vente.lignes, parametres);
+    
+    await prisma.recu.upsert({
+      where: { venteId: Number(venteId) },
+      update: { urlPdf, reference: vente.reference },
+      create: { venteId: vente.id, reference: vente.reference, urlPdf }
+    });
+    
+    return {
+      id: vente.id,
+      venteId: vente.id,
+      reference: vente.reference,
+      urlPdf,
+      total: vente.total,
+      modePaiement: vente.modePaiement,
+      user: vente.user,
+      lignes: vente.lignes
+    };
   }
 }
 
