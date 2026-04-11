@@ -22,7 +22,20 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000', 'https://gestion-caisse-frontend.vercel.app'],
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:5173', 
+      'http://localhost:3000', 
+      'http://127.0.0.1:5173', 
+      'http://127.0.0.1:3000', 
+      'https://gestion-caisse-frontend.vercel.app'
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -38,6 +51,10 @@ app.use('/public', express.static(path.join(process.cwd(), 'public')));
 
 app.get('/', (req, res) => {
   res.json({ message: "GestiCom API fonctionne 🚀" });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // La route pour api-docs.json peut rester ou être supprimée si vous utilisez la statique

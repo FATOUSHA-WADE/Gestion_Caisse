@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: gestion-caisse
+    env: node
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: API_BASE_URL
+        value: https://gestion-caisse.onrender.com
+    healthCheck:
+      path: /health
+      interval: 30
+      timeout: 10
+      retries: 3
+      startupDelay: 30
