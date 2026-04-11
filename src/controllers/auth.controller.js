@@ -107,14 +107,9 @@ class AuthController {
           
           console.log(`Email send result:`, emailResult);
           
-          // En cas d'erreur, logger mais ne pas bloquer le processus
-          if (!emailResult.success) {
-            console.error('[EMAIL] Failed to send email:', emailResult.error);
-          }
-          
-          // Afficher le code en mode développement pour les tests
-          if (emailResult.simulated || process.env.NODE_ENV === 'development') {
-            console.log(`[DÉVELOPPEMENT] Code de vérification: ${verificationCode}`);
+          // Afficher le code en mode développement ou si email simulé
+          if (emailResult.simulated || process.env.NODE_ENV !== 'production') {
+            console.log(`[DÉVELOPPEMENT/SIMULATED] Code de vérification: ${verificationCode}`);
           }
         } catch (emailError) {
           console.error("Erreur envoi email:", emailError);
