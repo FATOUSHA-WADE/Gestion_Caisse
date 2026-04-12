@@ -2,13 +2,20 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { fileURLToPath as urlToFilePath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = urlToFilePath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const exportsDir = path.join(process.cwd(), 'exports');
-if (!fs.existsSync(exportsDir)) {
-  fs.mkdirSync(exportsDir, { recursive: true });
+// Use a temp directory for exports that will work on Render
+const exportsDir = process.env.RENDER ? '/tmp/exports' : path.join(process.cwd(), 'exports');
+
+try {
+  if (!fs.existsSync(exportsDir)) {
+    fs.mkdirSync(exportsDir, { recursive: true });
+  }
+} catch (e) {
+  console.log('[PDF] Could not create exports directory:', e.message);
 }
 
 function formatCurrency(value) {

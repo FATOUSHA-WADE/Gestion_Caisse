@@ -19,8 +19,14 @@ class RecuService {
       throw new Error("Vente introuvable");
     }
 
-    const parametres = await prisma.parametre.findFirst();
-    const urlPdf = await generatePDF(vente, vente.lignes, parametres);
+    let parametres = null;
+    try {
+      parametres = await prisma.parametre.findFirst();
+    } catch (e) {
+      console.log('[Recu] Paramètres non trouvés, utilisation des valeurs par défaut');
+    }
+    
+    const urlPdf = await generatePDF(vente, vente.lignes, parametres || {});
 
     const recu = await prisma.recu.create({
       data: {
@@ -53,8 +59,14 @@ class RecuService {
     
     if (!vente) return null;
     
-    const parametres = await prisma.parametre.findFirst();
-    const urlPdf = await generatePDF(vente, vente.lignes, parametres);
+    let parametres = null;
+    try {
+      parametres = await prisma.parametre.findFirst();
+    } catch (e) {
+      console.log('[Recu] Paramètres non trouvés, utilisation des valeurs par défaut');
+    }
+    
+    const urlPdf = await generatePDF(vente, vente.lignes, parametres || {});
     
     await prisma.recu.upsert({
       where: { venteId: Number(venteId) },
