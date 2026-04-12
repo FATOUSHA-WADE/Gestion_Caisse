@@ -10,13 +10,18 @@ import nodemailer from 'nodemailer';
 
 // Configuration SMTP depuis les variables d'environnement
 // Les variables sont déjà chargées par server.js au démarrage
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT) || 587;
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || 'noreply@gesticom.com';
+const SMTP_HOST = process.env.SMTP_HOST || process.env.SMTP_HOST_PRODUCTION || 'smtp.gmail.com';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT) || parseInt(process.env.SMTP_PORT_PRODUCTION) || 587;
+const SMTP_USER = process.env.SMTP_USER || process.env.SMTP_USER_PRODUCTION || '';
+const SMTP_PASS = process.env.SMTP_PASS || process.env.SMTP_PASS_PRODUCTION || '';
+const SMTP_FROM = process.env.SMTP_FROM || process.env.SMTP_FROM_PRODUCTION || SMTP_USER || 'noreply@gesticom.com';
 
-// Debug: afficher la configuration au chargement du module
+console.log('[EMAIL] SMTP Configuration check:');
+console.log('[EMAIL] SMTP_HOST:', SMTP_HOST);
+console.log('[EMAIL] SMTP_PORT:', SMTP_PORT);
+console.log('[EMAIL] SMTP_USER:', SMTP_USER ? 'défini' : 'non défini');
+console.log('[EMAIL] SMTP_PASS:', SMTP_PASS ? 'défini' : 'non défini');
+console.log('[EMAIL] SMTP_FROM:', SMTP_FROM);
 
 
 /**
