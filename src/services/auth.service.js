@@ -13,8 +13,14 @@ class AuthService {
       where: { telephone: normalizedTelephone }
     });
 
-    if (!user || user.statut === 'inactif') {
+    if (!user) {
       const error = new Error("Identifiants incorrects");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (user.statut === 'inactif') {
+      const error = new Error("Tu ne peux pas te connecter sur cet utilisateur, parce qu'il est désactivé");
       error.statusCode = 401;
       throw error;
     }

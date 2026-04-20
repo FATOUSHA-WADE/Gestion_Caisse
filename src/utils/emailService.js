@@ -9,7 +9,8 @@
 import nodemailer from 'nodemailer';
 
 // Helper function to get SMTP config at runtime (not at module load)
-function getSMTPConfig() {
+// Exported for testing
+export function getSMTPConfig() {
   // Check environment variables - supports both local (.env) and production (Render env vars)
   const config = {
     host: process.env.SMTP_HOST_PRODUCTION || process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -19,8 +20,7 @@ function getSMTPConfig() {
     from: process.env.SMTP_FROM_PRODUCTION || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@gesticom.com'
   };
   
-  console.log('[EMAIL] Runtime SMTP check - User defined:', !!config.user, '| Pass defined:', !!config.pass);
-  console.log('[EMAIL] All env vars:', Object.keys(process.env).filter(k => k.includes('SMTP')));
+  console.log('[EMAIL] Runtime SMTP check - User:', !!config.user, '| Pass:', !!config.pass);
   
   return config;
 }
@@ -49,9 +49,14 @@ function createTransporter() {
       user: smtp.user,
       pass: smtp.pass
     },
-    connectionTimeout: 45000,
-    greetingTimeout: 45000,
-    socketTimeout: 45000
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 100,
+    rateDelta: 1000,
+    rateLimit: 5,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
   };
   
   if (isGmail || smtp.port === 587) {

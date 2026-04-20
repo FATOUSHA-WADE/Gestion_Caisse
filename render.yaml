@@ -15,6 +15,16 @@ services:
         sync: false
       - key: API_BASE_URL
         value: https://gestion-caisse.onrender.com
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
     healthCheck:
       path: /health
       interval: 30

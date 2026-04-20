@@ -86,10 +86,16 @@ router.post('/reset-password', authController.resetPassword);
 
 // Route pour tester la connexion SMTP
 router.post('/test-email', async (req, res) => {
-  const { testSMTPConnection, sendTestEmail } = await import('../utils/emailService.js');
+  const { testSMTPConnection, sendTestEmail, getSMTPConfig } = await import('../utils/emailService.js');
+  
+  // Afficher la configuration actuelle
+  const smtp = getSMTPConfig();
+  console.log('[TEST-EMAIL] Current SMTP config:', { user: smtp.user ? 'SET' : 'NOT SET', pass: smtp.pass ? 'SET' : 'NOT SET', host: smtp.host, port: smtp.port });
   
   // Tester d'abord la connexion
   const connectionTest = await testSMTPConnection();
+  
+  console.log('[TEST-EMAIL] Connection test result:', connectionTest);
   
   if (!connectionTest.success) {
     return res.json({
@@ -171,5 +177,32 @@ router.delete('/users/me/photo', authMiddleware, async (req, res, next) => {
 
 // Route pour changer le mot de passe
 router.post('/change-password', authMiddleware, authController.changePassword);
+
+// Route de test pour l'email
+router.get('/test-email', async (req, res, next) => {
+  try {
+    const { testSMTPConnection, sendTestEmail } = await import('../utils/emailService.js');
+    const result = await testSMTPConnection();
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/test-email', async (req, res, next) => {
+  try {
+    const { sendTestEmail } = await import('../utils/emailService.js');
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email requis" });
+    }
+    
+    const result = await sendTestEmail(email);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;

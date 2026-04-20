@@ -100,19 +100,22 @@ class AuthController {
 
       console.log('[Auth] Code généré:', verificationCode, 'pour userId:', user.id);
 
-      // Envoyer le code par email si l'utilisateur a un email
+      // Envoyer le code par email en arrière-plan (sans bloquer la réponse)
       if (user.email) {
-        try {
-          const emailResult = await sendPasswordResetEmail(user.email, verificationCode, user.nom);
-          
-          console.log(`Email send result:`, emailResult);
-          
-          // Afficher le code en mode développement ou si email simulé
-          if (emailResult.simulated || process.env.NODE_ENV !== 'production') {
-            console.log(`[DÉVELOPPEMENT/SIMULATED] Code de vérification: ${verificationCode}`);
-          }
-        } catch (emailError) {
-          console.error("Erreur envoi email:", emailError);
+        sendPasswordResetEmail(user.email, verificationCode, user.nom)
+          .then(emailResult => {
+            console.log(`Email send result:`, emailResult);
+            if (emailResult.simulated || process.env.NODE_ENV !== 'production') {
+              console.log(`[DÉVELOPPEMENT/SIMULATED] Code de vérification: ${verificationCode}`);
+            }
+          })
+          .catch(emailError => {
+            console.error("Erreur envoi email:", emailError);
+          });
+        
+        // Afficher le code en développement
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[DÉVELOPPEMENT] Code de vérification: ${verificationCode}`);
         }
       } else {
         // Pas d'email, renvoyer un message d'erreur
