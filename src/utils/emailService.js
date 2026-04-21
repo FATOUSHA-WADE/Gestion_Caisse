@@ -16,12 +16,15 @@ export function getSMTPConfig() {
   const config = {
     host: process.env.SMTP_HOST_PRODUCTION || process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT_PRODUCTION) || parseInt(process.env.SMTP_PORT) || 587,
+    secure: parseInt(process.env.SMTP_PORT_PRODUCTION) === 465 || parseInt(process.env.SMTP_PORT) === 465,
     user: process.env.SMTP_USER_PRODUCTION || process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS_PRODUCTION || process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM_PRODUCTION || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@gesticom.com'
+    from: process.env.SMTP_FROM_PRODUCTION || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@gesticom.com',
+    // Disable pooling for production (Render)
+    disablePool: process.env.NODE_ENV === 'production' || process.env.RENDER === 'true'
   };
   
-  console.log('[EMAIL] Runtime SMTP check - User:', !!config.user, '| Pass:', !!config.pass, '| Host:', config.host);
+  console.log('[EMAIL] Runtime SMTP check - User:', !!config.user, '| Pass:', !!config.pass, '| Host:', config.host, '| Port:', config.port);
   
   return config;
 }
@@ -45,29 +48,31 @@ function createTransporter() {
   const config = {
     host: smtp.host,
     port: smtp.port,
-    secure: smtp.port === 465,
+    secure: smtp.secure || smtp.port === 465,
     auth: {
       user: smtp.user,
       pass: smtp.pass
     },
-    pool: true,
-    maxConnections: 1,
-    maxMessages: 100,
+    // Disable pooling en production (Render) pour éviter les problèmes de connexion persistante
+    pool: !smtp.disablePool,
+    maxConnections: smtp.disablePool ? 1 : 1,
+    maxMessages: smtp.disablePool ? 1 : 100,
     rateDelta: 1000,
     rateLimit: 5,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000
   };
   
-  if (isGmail || smtp.port === 587) {
+  // TLS/STARTTLS pour port 587 ou Gmail
+  if (isGmail || smtp.port === 587 || smtp.port === 587) {
     config.tls = {
-      rejectUnauthorized: true,
-      ciphers: 'TLSv1.2'
+      rejectUnauthorized: false,
+      ciphers: 'DEFAULT:!aNULL:!EXP:!LOW:!RC4:!DHE'
     };
   }
 
-  console.log('[EMAIL] Creating transporter for:', smtp.user.substring(0, 3) + '***@gmail.com');
+  console.log('[EMAIL] Creating transporter for:', smtp.user.substring(0, 3) + '*** | Pool:', !smtp.disablePool);
 
   return nodemailer.createTransport(config);
 }
@@ -100,41 +105,58 @@ export async function sendEmail(to, subject, html, text = null) {
     };
   }
 
-  try {
-    const transporter = createTransporter();
-    if (!transporter) {
-      console.error('[EMAIL] Transporter creation failed');
-      return { success: false, error: 'Transporter non disponible' };
-    }
-    
-    console.log('[EMAIL] Attempting to send email to:', to);
-    
-    const mailOptions = {
-      from: smtp.from,
-      to,
-      subject,
-      html,
-      text: text || html.replace(/<[^>]*>/g, '')
-    };
-    
-    const info = await transporter.sendMail(mailOptions);
+  let lastError = null;
+  const maxRetries = 2;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[EMAIL] Attempt ${attempt}/${maxRetries} to send email to:`, to);
+      
+      const transporter = createTransporter();
+      if (!transporter) {
+        console.error('[EMAIL] Transporter creation failed');
+        return { success: false, error: 'Transporter non disponible' };
+      }
+      
+      const mailOptions = {
+        from: smtp.from,
+        to,
+        subject,
+        html,
+        text: text || html.replace(/<[^>]*>/g, '')
+      };
+      
+      const info = await transporter.sendMail(mailOptions);
 
-    console.log(`[EMAIL] ✅ Envoyé avec succès! MessageId: ${info.messageId}`);
-    return { 
-      success: true, 
-      messageId: info.messageId,
-      response: info.response
-    };
-  } catch (error) {
-    console.error('[EMAIL ERROR] Full error:', error);
-    console.error('[EMAIL ERROR] Code:', error.code);
-    console.error('[EMAIL ERROR] Message:', error.message);
-    return { 
-      success: false, 
-      error: error.message,
-      code: error.code
-    };
+      console.log(`[EMAIL] ✅ Envoyé avec succès! MessageId: ${info.messageId}`);
+      return { 
+        success: true, 
+        messageId: info.messageId,
+        response: info.response
+      };
+    } catch (error) {
+      lastError = error;
+      console.error(`[EMAIL ERROR] Attempt ${attempt} failed:`, error.message);
+      console.error('[EMAIL ERROR] Code:', error.code);
+      
+      // Si c'est une erreur d'authentification, on arrête immédiatement
+      if (error.code === 'EAUTH' || error.code === 'EAUTHENUM') {
+        console.error('[EMAIL] Authentication error - stopping retries');
+        break;
+      }
+      
+      // Attendre un peu avant de réessayer (sauf au dernier essai)
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
   }
+  
+  return { 
+    success: false, 
+    error: lastError?.message || 'Erreur inconnue',
+    code: lastError?.code
+  };
 }
 
 /**
