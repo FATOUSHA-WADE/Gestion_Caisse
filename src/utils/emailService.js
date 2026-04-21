@@ -12,6 +12,7 @@ import nodemailer from 'nodemailer';
 // Exported for testing
 export function getSMTPConfig() {
   // Check environment variables - supports both local (.env) and production (Render env vars)
+  // Use production vars if set, otherwise fall back to local vars
   const config = {
     host: process.env.SMTP_HOST_PRODUCTION || process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT_PRODUCTION) || parseInt(process.env.SMTP_PORT) || 587,
@@ -20,7 +21,7 @@ export function getSMTPConfig() {
     from: process.env.SMTP_FROM_PRODUCTION || process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@gesticom.com'
   };
   
-  console.log('[EMAIL] Runtime SMTP check - User:', !!config.user, '| Pass:', !!config.pass);
+  console.log('[EMAIL] Runtime SMTP check - User:', !!config.user, '| Pass:', !!config.pass, '| Host:', config.host);
   
   return config;
 }

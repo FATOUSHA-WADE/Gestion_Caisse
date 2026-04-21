@@ -77,6 +77,32 @@ class CategorieService {
       where: { id: Number(id) }
     });
   }
+
+  async archive(id) {
+    await this.getById(id);
+
+    return await prisma.categorie.update({
+      where: { id: Number(id) },
+      data: {
+        isArchived: true,
+        archivedAt: new Date(),
+        statut: 'inactif'
+      }
+    });
+  }
+
+  async unarchive(id) {
+    await this.getById(id);
+
+    return await prisma.categorie.update({
+      where: { id: Number(id) },
+      data: {
+        isArchived: false,
+        archivedAt: null,
+        statut: 'actif'
+      }
+    });
+  }
 }
 
 export default new CategorieService();

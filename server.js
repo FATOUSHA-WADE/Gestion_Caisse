@@ -2,7 +2,7 @@ import 'dotenv/config';
 import app from './src/app.js';
 
 const PORT = process.env.PORT || 3000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const NODE_ENV = process.env.NODE_ENV || 'production'; // Default to production
 
 console.log('NODE_ENV:', NODE_ENV);
 
@@ -17,5 +17,5 @@ console.log('SMTP variables:', JSON.stringify(smtpVars));
 
 
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`);
+  console.log(`🚀 Serveur lancé sur http://localhost:${PORT} en mode ${NODE_ENV}`);
 });

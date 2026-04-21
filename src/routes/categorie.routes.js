@@ -29,4 +29,18 @@ router.delete(
   categorieController.delete
 );
 
+router.patch(
+  '/:id/archive',
+  authMiddleware,
+  roleMiddleware(['admin', 'gerant']),
+  categorieController.archive
+);
+
+router.patch(
+  '/:id/unarchive',
+  authMiddleware,
+  roleMiddleware(['admin', 'gerant']),
+  categorieController.unarchive
+);
+
 export default router;

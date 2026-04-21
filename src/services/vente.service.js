@@ -96,6 +96,13 @@ class VenteService {
       filters.statut = query.statut;
     }
 
+    if (query.reference) {
+      filters.reference = {
+        contains: query.reference,
+        mode: 'insensitive'
+      };
+    }
+
     const [ventes, total] = await Promise.all([
       prisma.vente.findMany({
         where: filters,

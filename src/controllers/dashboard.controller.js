@@ -4,8 +4,9 @@ class DashboardController {
 
   async stats(req, res, next) {
     try {
+      const { periode } = req.query;
 
-      const data = await dashboardService.getStats();
+      const data = await dashboardService.getStats(periode);
 
       res.json({
         success: true,
@@ -19,8 +20,9 @@ class DashboardController {
 
   async chart(req, res, next) {
     try {
+      const { periode } = req.query;
 
-      const data = await dashboardService.ventesParJour();
+      const data = await dashboardService.ventesParJour(periode);
 
       res.json({
         success: true,

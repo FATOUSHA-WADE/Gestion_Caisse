@@ -25,6 +25,12 @@ class AuthService {
       throw error;
     }
 
+    if (user.isBlocked === true) {
+      const error = new Error("Votre compte a été bloqué. Veuillez contacter l'administrateur.");
+      error.statusCode = 401;
+      throw error;
+    }
+
     const passwordValide = await bcrypt.compare(password, user.password);
 
     if (!passwordValide) {

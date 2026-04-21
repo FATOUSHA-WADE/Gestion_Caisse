@@ -134,6 +134,30 @@ router.post('/users', authMiddleware, upload.single('photo'), authController.cre
 router.put('/users/:id', authMiddleware, upload.single('photo'), authController.updateUser);
 router.patch('/users/:id/statut', authMiddleware, authController.updateUser);
 router.delete('/users/:id', authMiddleware, authController.deleteUser);
+router.patch('/users/:id/block', authMiddleware, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.user.update({
+      where: { id: Number(id) },
+      data: { isBlocked: true, blockedAt: new Date() }
+    });
+    res.json({ success: true, message: "Utilisateur bloqué" });
+  } catch (error) {
+    next(error);
+  }
+});
+router.patch('/users/:id/unblock', authMiddleware, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.user.update({
+      where: { id: Number(id) },
+      data: { isBlocked: false, blockedAt: null }
+    });
+    res.json({ success: true, message: "Utilisateur débloqué" });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Route pour mettre à jour sa propre photo de profil
 router.put('/users/me/photo', authMiddleware, upload.single('photo'), async (req, res, next) => {
@@ -181,9 +205,11 @@ router.post('/change-password', authMiddleware, authController.changePassword);
 // Route de test pour l'email
 router.get('/test-email', async (req, res, next) => {
   try {
-    const { testSMTPConnection, sendTestEmail } = await import('../utils/emailService.js');
+    const { testSMTPConnection, getSMTPConfig } = await import('../utils/emailService.js');
+    const smtpConfig = getSMTPConfig();
+    console.log('SMTP Config:', smtpConfig);
     const result = await testSMTPConnection();
-    res.json(result);
+    res.json({ ...result, smtpConfig });
   } catch (error) {
     next(error);
   }

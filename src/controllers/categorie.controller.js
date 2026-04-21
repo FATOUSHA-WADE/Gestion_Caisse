@@ -94,6 +94,36 @@ class CategorieController {
       next(error);
     }
   }
+
+  async archive(req, res, next) {
+    try {
+      const categorie = await categorieService.archive(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Catégorie archivée",
+        data: categorie
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async unarchive(req, res, next) {
+    try {
+      const categorie = await categorieService.unarchive(req.params.id);
+
+      res.json({
+        success: true,
+        message: "Catégorie désarchivée",
+        data: categorie
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new CategorieController();

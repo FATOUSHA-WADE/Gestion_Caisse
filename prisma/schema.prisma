@@ -23,6 +23,8 @@ model User {
   password          String
   role              Role            @default(caissier)
   statut            StatutUser      @default(actif)
+  isBlocked         Boolean        @default(false)
+  blockedAt        DateTime?
   photo             String?
   derniereConnexion DateTime?       
   createdAt         DateTime        @default(now()) 
@@ -39,6 +41,8 @@ model Categorie {
   nom         String           @unique
   description String?
   statut      StatutCategorie  @default(actif)
+  isArchived  Boolean         @default(false)
+  archivedAt  DateTime?
   createdAt   DateTime         @default(now())
   produits    Produit[]
 }

@@ -33,11 +33,12 @@ class AuthController {
     }
   }
 
-  async forgotPassword(req, res, next) {
+async forgotPassword(req, res, next) {
     try {
       const { identifier } = req.body;
       
       console.log('[Auth] forgotPassword called:', { identifier });
+      console.log('[Auth] NODE_ENV:', process.env.NODE_ENV);
 
       if (!identifier) {
         return res.status(400).json({
@@ -83,12 +84,7 @@ class AuthController {
       // Stocker le code de vérification (avec expiration de 15 minutes)
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
       
-      // Supprimer les anciens codes de vérification pour cet utilisateur
-      await prisma.passwordReset.deleteMany({
-        where: { userId: user.id }
-      });
-      
-      // Créer un nouveau code de vérification
+      // Sauvegarder le code en base
       await prisma.passwordReset.create({
         data: {
           userId: user.id,
@@ -100,17 +96,19 @@ class AuthController {
 
       console.log('[Auth] Code généré:', verificationCode, 'pour userId:', user.id);
 
+      // Log SMTP config pour debugging
+      const { getSMTPConfig } = await import('../utils/emailService.js');
+      const smtpConfig = getSMTPConfig();
+      console.log('[Auth] SMTP Config - Host:', smtpConfig.host, 'User:', smtpConfig.user ? 'SET' : 'NOT SET');
+
       // Envoyer le code par email en arrière-plan (sans bloquer la réponse)
       if (user.email) {
         sendPasswordResetEmail(user.email, verificationCode, user.nom)
           .then(emailResult => {
-            console.log(`Email send result:`, emailResult);
-            if (emailResult.simulated || process.env.NODE_ENV !== 'production') {
-              console.log(`[DÉVELOPPEMENT/SIMULATED] Code de vérification: ${verificationCode}`);
-            }
+            console.log(`[Auth] Email send result:`, emailResult);
           })
           .catch(emailError => {
-            console.error("Erreur envoi email:", emailError);
+            console.error("[Auth] Erreur envoi email:", emailError.message);
           });
         
         // Afficher le code en développement

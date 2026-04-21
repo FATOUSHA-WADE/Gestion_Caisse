@@ -2,12 +2,53 @@ import prisma from '../config/database.js';
 
 class DashboardService {
 
-  async getStats() {
+  async getStats(periode = 'semaine') {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    let startDate = new Date(today);
+    let endDate = new Date(today);
+    endDate.setHours(23, 59, 59, 999);
+
+    switch (periode) {
+      case 'semaine':
+        const currentDay = today.getDay();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - ((currentDay + 6) % 7));
+        monday.setHours(0, 0, 0, 0);
+        startDate = monday;
+        endDate = new Date(monday);
+        endDate.setDate(monday.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'mois':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDate = lastDayOfMonth;
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'annee':
+        startDate = new Date(today.getFullYear(), 0, 1);
+        endDate = new Date(today.getFullYear(), 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      default:
+        const dayStart = new Date(today);
+        dayStart.setHours(0, 0, 0, 0);
+        startDate = dayStart;
+    }
+
     const startMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // 💰 CA based on period
+    const caPeriode = await prisma.vente.aggregate({
+      _sum: { total: true },
+      where: {
+        createdAt: { gte: startDate, lte: endDate },
+        statut: "validee"
+      }
+    });
 
     // 💰 CA du jour
     const caJour = await prisma.vente.aggregate({
@@ -67,30 +108,41 @@ class DashboardService {
       })
     );
 
-    // 📊 Ventes de la semaine par jour
-    // Calculer le lundi de la semaine courante
-    const currentDay = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((currentDay + 6) % 7));
-    monday.setHours(0, 0, 0, 0);
+    // 📊 Ventes based on period for chart
+    let chartStartDate = new Date(startDate);
+    let chartEndDate = new Date(endDate);
+    
+    if (periode === 'semaine') {
+      const currentDay = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - ((currentDay + 6) % 7));
+      monday.setHours(0, 0, 0, 0);
+      chartStartDate = monday;
+      chartEndDate = new Date(monday);
+      chartEndDate.setDate(monday.getDate() + 6);
+      chartEndDate.setHours(23, 59, 59, 999);
+    } else if (periode === 'mois') {
+      chartStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      chartEndDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      chartEndDate.setHours(23, 59, 59, 999);
+    } else if (periode === 'annee') {
+      chartStartDate = new Date(today.getFullYear(), 0, 1);
+      chartEndDate = new Date(today.getFullYear(), 11, 31);
+      chartEndDate.setHours(23, 59, 59, 999);
+    }
 
-    // Calculer le dimanche de la semaine courante
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    const ventesSemaine = await prisma.$queryRaw`
+    const ventesPeriode = await prisma.$queryRaw`
       SELECT DATE("createdAt" AT TIME ZONE 'Africa/Dakar') as date,
              SUM(total) as total,
              COUNT(*) as "nbVentes"
       FROM "Vente"
-      WHERE "createdAt" >= ${monday} AND "createdAt" <= ${sunday} AND statut = 'validee'
+      WHERE "createdAt" >= ${chartStartDate} AND "createdAt" <= ${chartEndDate} AND statut = 'validee'
       GROUP BY DATE("createdAt" AT TIME ZONE 'Africa/Dakar')
       ORDER BY date ASC
     `;
 
     // Formater les dates pour le frontend
-    const formattedVentesSemaine = ventesSemaine.map(v => ({
+    const formattedVentesSemaine = ventesPeriode.map(v => ({
       date: v.date instanceof Date ? v.date.toISOString().slice(0, 10) : String(v.date).slice(0, 10),
       total: Number(v.total || 0),
       nbVentes: Number(v.nbVentes || 0)
@@ -232,6 +284,8 @@ class DashboardService {
     const heureFermetureCaisse = '23:59';
 
     return {
+      periode: periode,
+      caPeriode: caPeriode._sum.total || 0,
       caJour: caJour._sum.total || 0,
       caMois: caMois._sum.total || 0,
       caTotal: caTotal._sum.total || 0,
