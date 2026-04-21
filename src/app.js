@@ -14,6 +14,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import mouvementStockRoutes from './routes/mouvementStock.routes.js';
 import parametreRoutes from './routes/parametre.routes.js';
+import prisma from './config/database.js';
 import './listeners/notification.listener.js';
 import { verifierCAJournalier } from './listeners/notification.listener.js';
 
@@ -40,8 +41,23 @@ app.get('/', (req, res) => {
   res.json({ message: "GestiCom API fonctionne 🚀" });
 });
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ 
+      status: 'ok', 
+      database: 'connected',
+      timestamp: new Date().toISOString() 
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'degraded', 
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString() 
+    });
+  }
 });
 
 // La route pour api-docs.json peut rester ou être supprimée si vous utilisez la statique
