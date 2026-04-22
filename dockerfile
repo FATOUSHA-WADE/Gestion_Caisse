@@ -6,6 +6,7 @@ WORKDIR /app
 # Copie des fichiers package et prisma
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY prisma.config.js ./
 
 # Install dependencies
 RUN npm install
@@ -13,13 +14,10 @@ RUN npm install
 # Copie du reste du code
 COPY . .
 
-# Génère Prisma Client
+# Génère Prisma Client (n'exécute PAS migrate ici - sera fait au démarrage)
 RUN npx prisma generate
-
-# Variables d'environnement (à configurer dans Render Dashboard)
-# SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
-# Ces variables doivent être définies dans les paramètres Render
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+# Au démarrage: migrate puis lance le serveur
+CMD ["node", "server.js"]
