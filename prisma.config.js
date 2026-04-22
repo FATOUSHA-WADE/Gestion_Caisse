@@ -5,10 +5,8 @@ const getDatabaseUrl = () => {
   let dbUrl = process.env.DATABASE_URL;
 
   if (!dbUrl) {
-    console.error("[PRISMA] ERROR: DATABASE_URL not found in environment!");
-    const dbEnvVars = Object.keys(process.env).filter(k => k.includes("DB") || k.includes("DATABASE"));
-    console.log("[PRISMA] Available DB-related env vars:", dbEnvVars.join(", ") || "none");
-    throw new Error("DATABASE_URL environment variable is not set");
+    console.log("[PRISMA] WARNING: DATABASE_URL not found - using placeholder for generate");
+    return "postgresql://placeholder:placeholder@localhost:5432/placeholder";
   }
 
   const hostPart = dbUrl.split("@")[1]?.split("/")[0] || "not found";
