@@ -6,7 +6,7 @@ WORKDIR /app
 # Copie des fichiers package et prisma
 COPY package*.json ./
 COPY prisma ./prisma/
-COPY prisma.config.js ./
+COPY .env ./
 
 # Install dependencies
 RUN npm install
@@ -14,10 +14,13 @@ RUN npm install
 # Copie du reste du code
 COPY . .
 
-# Génère Prisma Client (n'exécute PAS migrate ici - sera fait au démarrage)
+# Génère Prisma Client avec DATABASE_URL
+ARG DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+ENV DATABASE_URL=$DATABASE_URL
+
 RUN npx prisma generate
 
 EXPOSE 3000
 
-# Au démarrage: migrate puis lance le serveur
+# Au démarrage: lance le serveur
 CMD ["node", "server.js"]
